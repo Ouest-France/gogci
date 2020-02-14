@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -52,6 +53,8 @@ func initConfig() {
 	}
 
 	// read in environment variables that match
+	replacer := strings.NewReplacer("-", "_")
+	viper.SetEnvKeyReplacer(replacer)
 	viper.SetEnvPrefix("GOGCI")
 	viper.AutomaticEnv()
 
