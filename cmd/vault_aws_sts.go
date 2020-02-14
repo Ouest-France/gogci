@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/Ouest-France/gogci/awsconfig"
 	vault "github.com/hashicorp/vault/api"
@@ -30,10 +29,7 @@ var vaultAwsStsCmd = &cobra.Command{
 			}
 		}
 
-		// Also bind vault-addr to standard VAULT_ADDR env var
-		err := viper.BindEnv("vault-addr", "VAULT_ADDR")
-
-		return err
+		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -55,7 +51,7 @@ var vaultAwsStsCmd = &cobra.Command{
 		vc.SetToken(secret.Auth.ClientToken)
 
 		// Get AWS STS credentials
-		secret, err = vc.Logical().Read(fmt.Sprintf("%s/sts/%s", viper.GetString("vault-aws-path"), os.Getenv("vault-aws-sts-role")))
+		secret, err = vc.Logical().Read(fmt.Sprintf("%s/sts/%s", viper.GetString("vault-aws-path"), viper.GetString("vault-aws-sts-role")))
 		if err != nil {
 			return err
 		}
@@ -71,7 +67,7 @@ var vaultAwsStsCmd = &cobra.Command{
 }
 
 func init() {
-	vaultAwsStsCmd.Flags().String("vault-addr", "", "Vault server address [VAULT_ADDR / GOGCI_VAULT_ADDR]")
+	vaultAwsStsCmd.Flags().String("vault-addr", "", "Vault server address [GOGCI_VAULT_ADDR]")
 	vaultAwsStsCmd.Flags().String("vault-role-id", "", "Vault AppRole Role ID [GOGCI_VAULT_ROLE_ID]")
 	vaultAwsStsCmd.Flags().String("vault-secret-id", "", "Vault AppRole Secret ID [GOGCI_VAULT_SECRET_ID]")
 	vaultAwsStsCmd.Flags().String("vault-aws-path", "aws", "Vault AWS backend mount [GOGCI_VAULT_AWS_PATH]")
