@@ -61,6 +61,41 @@ func (g *Gitlab) CreateMergeRequestNote(tmpl string, data interface{}) error {
 	return err
 }
 
+func (g *Gitlab) TerraformInitFailed() error {
+
+	var notif = " :red_circle: Terraform init **failed** in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+
+:memo: [see job log]({{.Job}})`
+
+	// Get working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// Extract subdir in path
+	wd = strings.Replace(wd, os.Getenv("CI_PROJECT_DIR"), "", 1)
+	if wd == "" {
+		wd = "."
+	}
+
+	// Collect data for templating
+	data := struct {
+		Dir, Commit, Job, PipelineID, PipelineURL string
+	}{
+		Dir:         wd,
+		Commit:      os.Getenv("CI_COMMIT_SHORT_SHA"),
+		Job:         os.Getenv("CI_JOB_URL"),
+		PipelineID:  os.Getenv("CI_PIPELINE_ID"),
+		PipelineURL: os.Getenv("CI_PIPELINE_URL"),
+	}
+
+	// Create comment
+	err = g.CreateMergeRequestNote(notif, data)
+
+	return err
+}
+
 func (g *Gitlab) TerraformPlanRunning() error {
 
 	var notif = "Terraform plan running in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `

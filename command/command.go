@@ -44,15 +44,15 @@ func Run(name string, args []string) (stdout, stderr []byte, code int, err error
 	// Wait end of command execution
 	err = cmd.Wait()
 	if err != nil {
-		return stdout, stderr, cmd.ProcessState.ExitCode(), fmt.Errorf("command execution failed: %s", err)
+		return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), fmt.Errorf("command execution failed: %s", err)
 	}
 
 	// Return stdout/stderr
 	if errStdout != nil {
-		return stdout, stderr, cmd.ProcessState.ExitCode(), fmt.Errorf("failed to capture stdout : %s", errStdout)
+		return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), fmt.Errorf("failed to capture stdout : %s", errStdout)
 	}
 	if errStderr != nil {
-		return stdout, stderr, cmd.ProcessState.ExitCode(), fmt.Errorf("failed to capture stderr: %s", errStderr)
+		return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), fmt.Errorf("failed to capture stderr: %s", errStderr)
 	}
 
 	return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), nil
