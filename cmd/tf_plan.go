@@ -6,6 +6,7 @@ import (
 
 	"github.com/Ouest-France/gogci/command"
 	"github.com/Ouest-France/gogci/notify"
+	"github.com/acarl005/stripansi"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -50,7 +51,7 @@ var tfPlanCmd = &cobra.Command{
 		}
 
 		// Notify plan summary
-		err = git.TerraformPlanSummary(string(stdout))
+		err = git.TerraformPlanSummary(stripansi.Strip(string(stdout)))
 		if err != nil {
 			return err
 		}
