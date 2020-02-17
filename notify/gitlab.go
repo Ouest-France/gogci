@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -62,9 +63,9 @@ func (g *Gitlab) CreateMergeRequestNote(tmpl string, data interface{}) error {
 
 func (g *Gitlab) TerraformPlanRunning() error {
 
-	var notif = "Terraform plan ran in `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
-	
-[see job log]({{.Job}})`
+	var notif = "Terraform plan ran in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+
+:memo: [see job log]({{.Job}})`
 
 	// Get working directory
 	wd, err := os.Getwd()
@@ -95,11 +96,20 @@ func (g *Gitlab) TerraformPlanRunning() error {
 	return err
 }
 
-func (g *Gitlab) TerraformPlanSummary() error {
+func (g *Gitlab) TerraformPlanSummary(output string) error {
 
-	var notif = "Terraform plan ran in `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+	var notif = "Terraform plan ran in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
-[see job log]({{.Job}})`
+**Summary**: {{.Summary}}
+
+<details><summary>Show Output</summary>
+
+` + "```" + `
+{{.Stdout}}
+` + "```" + `
+</details>
+
+:memo: [see job log]({{.Job}})`
 
 	// Get working directory
 	wd, err := os.Getwd()
@@ -113,15 +123,24 @@ func (g *Gitlab) TerraformPlanSummary() error {
 		wd = "."
 	}
 
+	// Extract summary
+	r, err := regexp.Compile("Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy")
+	if err != nil {
+		return fmt.Errorf("failed to compile regex: %s", err)
+	}
+	summary := r.FindString(output)
+
 	// Collect data for templating
 	data := struct {
-		Dir, Commit, Job, PipelineID, PipelineURL string
+		Dir, Commit, Job, PipelineID, PipelineURL, Summary, Stdout string
 	}{
 		Dir:         wd,
 		Commit:      os.Getenv("CI_COMMIT_SHORT_SHA"),
 		Job:         os.Getenv("CI_JOB_URL"),
 		PipelineID:  os.Getenv("CI_PIPELINE_ID"),
 		PipelineURL: os.Getenv("CI_PIPELINE_URL"),
+		Summary:     summary,
+		Stdout:      output,
 	}
 
 	// Create comment
