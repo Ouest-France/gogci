@@ -3,11 +3,11 @@ package notify
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/xanzy/go-gitlab"
 )
@@ -96,11 +96,55 @@ func (g *Gitlab) TerraformPlanRunning() error {
 	return err
 }
 
+func (g *Gitlab) TerraformPlanFailed(output string) error {
+
+	var notif = " :red_circle: Terraform plan **failed** in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+
+<details><summary>Show Output</summary>
+
+` + "```" + `
+{{.Stdout}}
+` + "```" + `
+</details>
+	
+---
+:memo: [see job log]({{.Job}})`
+
+	// Get working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// Extract subdir in path
+	wd = strings.Replace(wd, os.Getenv("CI_PROJECT_DIR"), "", 1)
+	if wd == "" {
+		wd = "."
+	}
+
+	// Collect data for templating
+	data := struct {
+		Dir, Commit, Job, PipelineID, PipelineURL, Stdout string
+	}{
+		Dir:         wd,
+		Commit:      os.Getenv("CI_COMMIT_SHORT_SHA"),
+		Job:         os.Getenv("CI_JOB_URL"),
+		PipelineID:  os.Getenv("CI_PIPELINE_ID"),
+		PipelineURL: os.Getenv("CI_PIPELINE_URL"),
+		Stdout:      output,
+	}
+
+	// Create comment
+	err = g.CreateMergeRequestNote(notif, data)
+
+	return err
+}
+
 func (g *Gitlab) TerraformPlanSummary(output string) error {
 
 	var notif = "Terraform plan ran in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
-**Summary**: {{.Summary}}
+**Plan summary**: {{.Summary}}
 
 <details><summary>Show Output</summary>
 
@@ -126,7 +170,7 @@ func (g *Gitlab) TerraformPlanSummary(output string) error {
 	}
 
 	// Extract summary
-	r, err := regexp.Compile("Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy")
+	r, err := regexp.Compile("([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy")
 	if err != nil {
 		return fmt.Errorf("failed to compile regex: %s", err)
 	}

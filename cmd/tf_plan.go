@@ -47,6 +47,10 @@ var tfPlanCmd = &cobra.Command{
 		// Execute plan
 		stdout, _, _, err := command.Run("terraform", append([]string{"plan"}, args...))
 		if err != nil {
+			errGit := git.TerraformPlanFailed(stripansi.Strip(string(stdout)))
+			if errGit != nil {
+				return fmt.Errorf("%s: %s", errGit, err)
+			}
 			return err
 		}
 
