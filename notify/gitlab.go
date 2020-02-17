@@ -71,7 +71,7 @@ func (g *Gitlab) TerraformPlanRunning() error {
 	}
 
 	// Extract subdir in path
-	wd = strings.Replace(wd, os.Getenv("CI_BUILDS_DIR"), "", 1)
+	wd = strings.Replace(wd, os.Getenv("CI_PROJECT_DIR"), "", 1)
 	if wd == "" {
 		wd = "."
 	}
@@ -104,7 +104,7 @@ func (g *Gitlab) TerraformPlanSummary() error {
 	}
 
 	// Extract subdir in path
-	wd = strings.Replace(wd, os.Getenv("CI_BUILDS_DIR"), "", 1)
+	wd = strings.Replace(wd, os.Getenv("CI_PROJECT_DIR"), "", 1)
 	if wd == "" {
 		wd = "."
 	}
