@@ -62,7 +62,9 @@ func (g *Gitlab) CreateMergeRequestNote(tmpl string, data interface{}) error {
 
 func (g *Gitlab) TerraformPlanRunning() error {
 
-	var notif = "Terraform plan launched in `{{.Dir}}` for commit `{{.Commit}}` in pipeline [{{.PipelineID}}]({{.PipelineURL}}): [see job log]({{.Job}})"
+	var notif = "Terraform plan ran in `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+	
+[see job log]({{.Job}})`
 
 	// Get working directory
 	wd, err := os.Getwd()
@@ -95,7 +97,9 @@ func (g *Gitlab) TerraformPlanRunning() error {
 
 func (g *Gitlab) TerraformPlanSummary() error {
 
-	var notif = "Terraform plan ran in `{{.Dir}}` for commit `{{.Commit}}` in pipeline [{{.PipelineID}}]({{.PipelineURL}}): [see job log]({{.Job}})"
+	var notif = "Terraform plan ran in `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+
+[see job log]({{.Job}})`
 
 	// Get working directory
 	wd, err := os.Getwd()
