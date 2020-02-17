@@ -44,13 +44,13 @@ var tfPlanCmd = &cobra.Command{
 		}
 
 		// Execute plan
-		_, _, _, err = command.Run("terraform", append([]string{"plan"}, args...))
+		stdout, _, _, err := command.Run("terraform", append([]string{"plan"}, args...))
 		if err != nil {
 			return err
 		}
 
 		// Notify plan summary
-		err = git.TerraformPlanSummary()
+		err = git.TerraformPlanSummary(string(stdout))
 		if err != nil {
 			return err
 		}

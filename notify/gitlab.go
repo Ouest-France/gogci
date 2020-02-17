@@ -63,7 +63,7 @@ func (g *Gitlab) CreateMergeRequestNote(tmpl string, data interface{}) error {
 
 func (g *Gitlab) TerraformPlanRunning() error {
 
-	var notif = "Terraform plan ran in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+	var notif = "Terraform plan running in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
 :memo: [see job log]({{.Job}})`
 
@@ -108,6 +108,8 @@ func (g *Gitlab) TerraformPlanSummary(output string) error {
 {{.Stdout}}
 ` + "```" + `
 </details>
+
+---
 
 :memo: [see job log]({{.Job}})`
 
