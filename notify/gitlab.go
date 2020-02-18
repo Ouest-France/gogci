@@ -205,11 +205,19 @@ func (g *Gitlab) TerraformPlanSummary(output string) error {
 	}
 
 	// Extract summary
-	r, err := regexp.Compile("([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy")
+	nochanges, err := regexp.MatchString("No changes. Infrastructure is up-to-date.", output)
 	if err != nil {
-		return fmt.Errorf("failed to compile regex: %s", err)
+		return fmt.Errorf("failed to match string: %s", err)
 	}
-	summary := r.FindString(output)
+
+	summary := "No changes. Infrastructure is up-to-date."
+	if !nochanges {
+		r, err := regexp.Compile("([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy")
+		if err != nil {
+			return fmt.Errorf("failed to compile regex: %s", err)
+		}
+		summary = r.FindString(output)
+	}
 
 	// Collect data for templating
 	data := struct {
