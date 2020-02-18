@@ -65,7 +65,7 @@ func (g *Gitlab) TerraformInitFailed() error {
 
 	var notif = " :red_circle: Terraform init **failed** in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
-:memo: [see job log]({{.Job}})`
+:memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
 
 	// Get working directory
 	wd, err := os.Getwd()
@@ -100,7 +100,7 @@ func (g *Gitlab) TerraformPlanRunning() error {
 
 	var notif = "Terraform plan running in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
-:memo: [see job log]({{.Job}})`
+:memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
 
 	// Get working directory
 	wd, err := os.Getwd()
@@ -143,7 +143,7 @@ func (g *Gitlab) TerraformPlanFailed(output string) error {
 </details>
 	
 ---
-:memo: [see job log]({{.Job}})`
+:memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
 
 	// Get working directory
 	wd, err := os.Getwd()
@@ -190,7 +190,7 @@ func (g *Gitlab) TerraformPlanSummary(output string) error {
 
 ---
 
-:memo: [see job log]({{.Job}})`
+:memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
 
 	// Get working directory
 	wd, err := os.Getwd()
