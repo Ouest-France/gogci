@@ -229,3 +229,137 @@ func (g *Gitlab) TerraformPlanSummary(output string) error {
 
 	return err
 }
+
+func (g *Gitlab) TerraformApplyRunning() error {
+
+	var notif = "Terraform apply running in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+
+:memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
+
+	// Get working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// Extract subdir in path
+	wd = strings.Replace(wd, os.Getenv("CI_PROJECT_DIR"), "", 1)
+	if wd == "" {
+		wd = "."
+	}
+
+	// Collect data for templating
+	data := struct {
+		Dir, Commit, Job, PipelineID, PipelineURL string
+	}{
+		Dir:         wd,
+		Commit:      os.Getenv("CI_COMMIT_SHORT_SHA"),
+		Job:         os.Getenv("CI_JOB_URL"),
+		PipelineID:  os.Getenv("CI_PIPELINE_ID"),
+		PipelineURL: os.Getenv("CI_PIPELINE_URL"),
+	}
+
+	// Create comment
+	err = g.CreateMergeRequestNote(notif, data)
+
+	return err
+}
+
+func (g *Gitlab) TerraformApplyFailed(output string) error {
+
+	var notif = " :red_circle: Terraform apply **failed** in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+
+<details><summary>Show Output</summary>
+
+` + "```" + `
+{{.Stdout}}
+` + "```" + `
+</details>
+	
+---
+:memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
+
+	// Get working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// Extract subdir in path
+	wd = strings.Replace(wd, os.Getenv("CI_PROJECT_DIR"), "", 1)
+	if wd == "" {
+		wd = "."
+	}
+
+	// Collect data for templating
+	data := struct {
+		Dir, Commit, Job, PipelineID, PipelineURL, Stdout string
+	}{
+		Dir:         wd,
+		Commit:      os.Getenv("CI_COMMIT_SHORT_SHA"),
+		Job:         os.Getenv("CI_JOB_URL"),
+		PipelineID:  os.Getenv("CI_PIPELINE_ID"),
+		PipelineURL: os.Getenv("CI_PIPELINE_URL"),
+		Stdout:      output,
+	}
+
+	// Create comment
+	err = g.CreateMergeRequestNote(notif, data)
+
+	return err
+}
+
+func (g *Gitlab) TerraformApplySummary(output string) error {
+
+	var notif = "Terraform apply ran in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+
+**Apply summary**: {{.Summary}}
+
+<details><summary>Show Output</summary>
+
+` + "```" + `
+{{.Stdout}}
+` + "```" + `
+</details>
+
+---
+
+:memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
+
+	// Get working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// Extract subdir in path
+	wd = strings.Replace(wd, os.Getenv("CI_PROJECT_DIR"), "", 1)
+	if wd == "" {
+		wd = "."
+	}
+
+	// Extract summary
+	r, err := regexp.Compile("([0-9]+) added, ([0-9]+) changed, ([0-9]+) destroyed")
+	if err != nil {
+		return fmt.Errorf("failed to compile regex: %s", err)
+	}
+	summary := r.FindString(output)
+
+	// Collect data for templating
+	data := struct {
+		Dir, Commit, Job, PipelineID, PipelineURL, Summary, Stdout string
+	}{
+		Dir:         wd,
+		Commit:      os.Getenv("CI_COMMIT_SHORT_SHA"),
+		Job:         os.Getenv("CI_JOB_URL"),
+		PipelineID:  os.Getenv("CI_PIPELINE_ID"),
+		PipelineURL: os.Getenv("CI_PIPELINE_URL"),
+		Summary:     summary,
+		Stdout:      output,
+	}
+
+	// Create comment
+	err = g.CreateMergeRequestNote(notif, data)
+
+	return err
+}
