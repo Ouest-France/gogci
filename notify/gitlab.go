@@ -135,14 +135,6 @@ func (g *Gitlab) TerraformPlanFailed(output string) error {
 
 	var notif = " :red_circle: Terraform plan **failed** in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
-<details><summary>Show Output</summary>
-
-` + "```" + `
-{{.Stdout}}
-` + "```" + `
-</details>
-	
----
 :memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
 
 	// Get working directory
@@ -180,15 +172,6 @@ func (g *Gitlab) TerraformPlanSummary(output string) error {
 	var notif = "Terraform plan ran in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
 **Plan summary**: {{.Summary}}
-
-<details><summary>Show Output</summary>
-
-` + "```" + `
-{{.Stdout}}
-` + "```" + `
-</details>
-
----
 
 :memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
 
@@ -277,14 +260,6 @@ func (g *Gitlab) TerraformApplyFailed(output string) error {
 
 	var notif = " :red_circle: Terraform apply **failed** in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
-<details><summary>Show Output</summary>
-
-` + "```" + `
-{{.Stdout}}
-` + "```" + `
-</details>
-	
----
 :memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
 
 	// Get working directory
@@ -322,15 +297,6 @@ func (g *Gitlab) TerraformApplySummary(output string) error {
 	var notif = "Terraform apply ran in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
 **Apply summary**: {{.Summary}}
-
-<details><summary>Show Output</summary>
-
-` + "```" + `
-{{.Stdout}}
-` + "```" + `
-</details>
-
----
 
 :memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
 
