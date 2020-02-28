@@ -1,4 +1,4 @@
-package notify
+package gitlab
 
 import (
 	"bytes"
@@ -12,16 +12,11 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type Gitlab struct {
-	Token string
-	URL   string
-}
-
-func (g *Gitlab) CreateMergeRequestNote(tmpl string, data interface{}) error {
+func (c *Client) CreateMergeRequestNote(tmpl string, data interface{}) error {
 
 	// Init gitlab client
-	git := gitlab.NewClient(nil, g.Token)
-	err := git.SetBaseURL(g.URL)
+	git := gitlab.NewClient(nil, c.Token)
+	err := git.SetBaseURL(c.URL)
 	if err != nil {
 		return err
 	}
@@ -61,7 +56,7 @@ func (g *Gitlab) CreateMergeRequestNote(tmpl string, data interface{}) error {
 	return err
 }
 
-func (g *Gitlab) TerraformInitFailed() error {
+func (c *Client) TerraformInitFailed() error {
 
 	var notif = " :red_circle: Terraform init **failed** in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
@@ -91,12 +86,12 @@ func (g *Gitlab) TerraformInitFailed() error {
 	}
 
 	// Create comment
-	err = g.CreateMergeRequestNote(notif, data)
+	err = c.CreateMergeRequestNote(notif, data)
 
 	return err
 }
 
-func (g *Gitlab) TerraformPlanRunning() error {
+func (c *Client) TerraformPlanRunning() error {
 
 	var notif = "Terraform plan running in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
@@ -126,12 +121,12 @@ func (g *Gitlab) TerraformPlanRunning() error {
 	}
 
 	// Create comment
-	err = g.CreateMergeRequestNote(notif, data)
+	err = c.CreateMergeRequestNote(notif, data)
 
 	return err
 }
 
-func (g *Gitlab) TerraformPlanFailed(output string) error {
+func (c *Client) TerraformPlanFailed(output string) error {
 
 	var notif = " :red_circle: Terraform plan **failed** in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
@@ -162,12 +157,12 @@ func (g *Gitlab) TerraformPlanFailed(output string) error {
 	}
 
 	// Create comment
-	err = g.CreateMergeRequestNote(notif, data)
+	err = c.CreateMergeRequestNote(notif, data)
 
 	return err
 }
 
-func (g *Gitlab) TerraformPlanSummary(output string) error {
+func (c *Client) TerraformPlanSummary(output string) error {
 
 	var notif = "Terraform plan ran in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
@@ -216,12 +211,12 @@ func (g *Gitlab) TerraformPlanSummary(output string) error {
 	}
 
 	// Create comment
-	err = g.CreateMergeRequestNote(notif, data)
+	err = c.CreateMergeRequestNote(notif, data)
 
 	return err
 }
 
-func (g *Gitlab) TerraformApplyRunning() error {
+func (c *Client) TerraformApplyRunning() error {
 
 	var notif = "Terraform apply running in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
@@ -251,12 +246,12 @@ func (g *Gitlab) TerraformApplyRunning() error {
 	}
 
 	// Create comment
-	err = g.CreateMergeRequestNote(notif, data)
+	err = c.CreateMergeRequestNote(notif, data)
 
 	return err
 }
 
-func (g *Gitlab) TerraformApplyFailed(output string) error {
+func (c *Client) TerraformApplyFailed(output string) error {
 
 	var notif = " :red_circle: Terraform apply **failed** in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
@@ -287,12 +282,12 @@ func (g *Gitlab) TerraformApplyFailed(output string) error {
 	}
 
 	// Create comment
-	err = g.CreateMergeRequestNote(notif, data)
+	err = c.CreateMergeRequestNote(notif, data)
 
 	return err
 }
 
-func (g *Gitlab) TerraformApplySummary(output string) error {
+func (c *Client) TerraformApplySummary(output string) error {
 
 	var notif = "Terraform apply ran in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
 
@@ -333,7 +328,7 @@ func (g *Gitlab) TerraformApplySummary(output string) error {
 	}
 
 	// Create comment
-	err = g.CreateMergeRequestNote(notif, data)
+	err = c.CreateMergeRequestNote(notif, data)
 
 	return err
 }
