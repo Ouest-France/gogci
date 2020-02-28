@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -15,15 +16,17 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "gogci",
-	Short: "GOGCI (Gitops in Gitlab CI) is an helper to do Gitops in Gitlab CI pipelines",
+	Use:           "gogci",
+	Short:         "GOGCI (Gitops in Gitlab CI) is an helper to do Gitops in Gitlab CI pipelines",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		color.Red(fmt.Sprintf("Error: %s", err))
 		os.Exit(1)
 	}
 }
