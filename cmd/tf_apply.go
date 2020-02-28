@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/Ouest-France/gogci/command"
-	"github.com/Ouest-France/gogci/notify"
+	"github.com/Ouest-France/gogci/gitlab"
 	"github.com/acarl005/stripansi"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,10 +36,10 @@ var tfApplyCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		// Create gitlab client
-		git := notify.Gitlab{Token: viper.GetString("gitlab-token"), URL: viper.GetString("gitlab-url")}
+		gc := gitlab.Client{Token: viper.GetString("gitlab-token"), URL: viper.GetString("gitlab-url")}
 
 		// Notify apply start
-		err := git.TerraformApplyRunning()
+		err := gc.TerraformApplyRunning()
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ var tfApplyCmd = &cobra.Command{
 		// Execute Apply
 		stdout, stderr, _, err := command.Run("terraform", append([]string{"apply"}, args...))
 		if err != nil {
-			errGit := git.TerraformApplyFailed(stripansi.Strip(string(stderr)))
+			errGit := gc.TerraformApplyFailed(stripansi.Strip(string(stderr)))
 			if errGit != nil {
 				return fmt.Errorf("%s: %s", errGit, err)
 			}
@@ -55,7 +55,7 @@ var tfApplyCmd = &cobra.Command{
 		}
 
 		// Notify apply summary
-		err = git.TerraformApplySummary(stripansi.Strip(string(stdout)))
+		err = gc.TerraformApplySummary(stripansi.Strip(string(stdout)))
 		if err != nil {
 			return err
 		}

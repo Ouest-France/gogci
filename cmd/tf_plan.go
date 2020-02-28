@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/Ouest-France/gogci/command"
-	"github.com/Ouest-France/gogci/notify"
+	"github.com/Ouest-France/gogci/gitlab"
 	"github.com/acarl005/stripansi"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,10 +36,10 @@ var tfPlanCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		// Create gitlab client
-		git := notify.Gitlab{Token: viper.GetString("gitlab-token"), URL: viper.GetString("gitlab-url")}
+		gc := gitlab.Client{Token: viper.GetString("gitlab-token"), URL: viper.GetString("gitlab-url")}
 
 		// Notify plan start
-		err := git.TerraformPlanRunning()
+		err := gc.TerraformPlanRunning()
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ var tfPlanCmd = &cobra.Command{
 		// Execute plan
 		stdout, stderr, _, err := command.Run("terraform", append([]string{"plan"}, args...))
 		if err != nil {
-			errGit := git.TerraformPlanFailed(stripansi.Strip(string(stderr)))
+			errGit := gc.TerraformPlanFailed(stripansi.Strip(string(stderr)))
 			if errGit != nil {
 				return fmt.Errorf("%s: %s", errGit, err)
 			}
@@ -55,7 +55,7 @@ var tfPlanCmd = &cobra.Command{
 		}
 
 		// Notify plan summary
-		err = git.TerraformPlanSummary(stripansi.Strip(string(stdout)))
+		err = gc.TerraformPlanSummary(stripansi.Strip(string(stdout)))
 		if err != nil {
 			return err
 		}

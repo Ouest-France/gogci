@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/Ouest-France/gogci/command"
-	"github.com/Ouest-France/gogci/notify"
+	"github.com/Ouest-France/gogci/gitlab"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,12 +35,12 @@ var tfInitCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		// Create gitlab client
-		git := notify.Gitlab{Token: viper.GetString("gitlab-token"), URL: viper.GetString("gitlab-url")}
+		gc := gitlab.Client{Token: viper.GetString("gitlab-token"), URL: viper.GetString("gitlab-url")}
 
 		// Execute init
 		_, _, _, err := command.Run("terraform", []string{"init"})
 		if err != nil {
-			errGit := git.TerraformInitFailed()
+			errGit := gc.TerraformInitFailed()
 			if errGit != nil {
 				return fmt.Errorf("%s: %s", errGit, err)
 			}
