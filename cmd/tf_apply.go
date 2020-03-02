@@ -38,6 +38,23 @@ var tfApplyCmd = &cobra.Command{
 		// Create gitlab client
 		gc := gitlab.Client{Token: viper.GetString("gitlab-token"), URL: viper.GetString("gitlab-url")}
 
+		// Check merge request approval when approved flag is set
+		if viper.GetBool("approved") {
+			approved, err := gc.CheckMergeRequestApproved()
+			if err != nil {
+				return fmt.Errorf("failed to check merge request approval: %s", err)
+			}
+
+			if !approved {
+				err = gc.TerraformApplyNotApproved()
+				if err != nil {
+					return fmt.Errorf("failed to send 'terraform apply not approved' comment: %s", err)
+				}
+
+				return fmt.Errorf("merge request must be approved to execute 'terraform apply'")
+			}
+		}
+
 		// Notify apply start
 		err := gc.TerraformApplyRunning()
 		if err != nil {
@@ -67,6 +84,7 @@ var tfApplyCmd = &cobra.Command{
 func init() {
 	tfApplyCmd.Flags().String("gitlab-url", os.Getenv("CI_API_V4_URL"), "Gitlab API url (default: CI_API_V4_URL) [GOGCI_GITLAB_URL]")
 	tfApplyCmd.Flags().String("gitlab-token", "", "Gitlab API token [GOGCI_GITLAB_TOKEN]")
+	tfApplyCmd.Flags().Bool("approved", false, "Execute apply only when the merge request is approved [GOGCI_APPROVED]")
 
 	tfCmd.AddCommand(tfApplyCmd)
 }
