@@ -31,6 +31,12 @@ var tfApplyCmd = &cobra.Command{
 			}
 		}
 
+		// Bind viper to "--approved" flag
+		err := viper.BindPFlag("approved", cmd.Flags().Lookup("approved"))
+		if err != nil {
+			return fmt.Errorf("Error binding viper to flag %q: %s", "approved", err)
+		}
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
