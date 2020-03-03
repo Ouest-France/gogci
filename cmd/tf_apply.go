@@ -38,12 +38,16 @@ var tfApplyCmd = &cobra.Command{
 		// Create gitlab client
 		gc := gitlab.Client{Token: viper.GetString("gitlab-token"), URL: viper.GetString("gitlab-url")}
 
+		fmt.Printf("Flag --approved set to %v\n", viper.GetBool("approved"))
+
 		// Check merge request approval when approved flag is set
 		if viper.GetBool("approved") {
 			approved, err := gc.CheckMergeRequestApproved()
 			if err != nil {
 				return fmt.Errorf("failed to check merge request approval: %s", err)
 			}
+
+			fmt.Printf("Check merge request approval returned %v\n", approved)
 
 			if !approved {
 				err = gc.TerraformApplyNotApproved()
