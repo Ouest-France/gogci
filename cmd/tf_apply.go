@@ -17,6 +17,7 @@ var tfApplyCmd = &cobra.Command{
 	Short: "Launch terraform apply and send output to Gitlab MR comment",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 
+		// Bind string flags
 		for _, flag := range []string{"gitlab-url", "gitlab-token"} {
 
 			// Bind viper to flag
@@ -31,10 +32,14 @@ var tfApplyCmd = &cobra.Command{
 			}
 		}
 
-		// Bind viper to "--approved" flag
-		err := viper.BindPFlag("approved", cmd.Flags().Lookup("approved"))
-		if err != nil {
-			return fmt.Errorf("Error binding viper to flag %q: %s", "approved", err)
+		// Bind bool flags
+		for _, flag := range []string{"approved", "oldest"} {
+
+			// Bind viper to flag
+			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
+			if err != nil {
+				return fmt.Errorf("Error binding viper to flag %q: %s", flag, err)
+			}
 		}
 
 		return nil
@@ -58,6 +63,21 @@ var tfApplyCmd = &cobra.Command{
 				}
 
 				return fmt.Errorf("merge request must be approved to execute 'terraform apply'")
+			}
+		}
+
+		// Check that no older merge request are in open state
+		if viper.GetBool("oldest") {
+			oldest, err := gc.CheckOldestMergeRequest()
+			if err != nil {
+				return fmt.Errorf("failed to check is current merge request is the oldest still open")
+			}
+			if !oldest {
+				if err != nil {
+					return fmt.Errorf("failed to send 'terraform apply blocked' comment: %s", err)
+				}
+
+				return fmt.Errorf("all older merge requests must be closed to launch 'terraform apply'")
 			}
 		}
 
@@ -91,6 +111,7 @@ func init() {
 	tfApplyCmd.Flags().String("gitlab-url", os.Getenv("CI_API_V4_URL"), "Gitlab API url (default: CI_API_V4_URL) [GOGCI_GITLAB_URL]")
 	tfApplyCmd.Flags().String("gitlab-token", "", "Gitlab API token [GOGCI_GITLAB_TOKEN]")
 	tfApplyCmd.Flags().Bool("approved", false, "Execute apply only when the merge request is approved [GOGCI_APPROVED]")
+	tfApplyCmd.Flags().Bool("oldest", true, "Execute apply only when no older merge requests is in open state [GOGCI_OLDEST]")
 
 	tfCmd.AddCommand(tfApplyCmd)
 }

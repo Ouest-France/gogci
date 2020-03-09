@@ -367,3 +367,38 @@ func (c *Client) TerraformApplyNotApproved() error {
 
 	return err
 }
+
+func (c *Client) TerraformApplyBlocked() error {
+
+	var notif = ":no_entry: Terraform apply **blocked**, all older merge requests must be closed, in dir `{{.Dir}}` for commit `{{.Commit}}` in pipeline `{{.PipelineID}}`." + `
+
+:memo: [see job log]({{.Job}}) | :arrow_forward: [see pipeline]({{.PipelineURL}})`
+
+	// Get working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// Extract subdir in path
+	wd = strings.Replace(wd, os.Getenv("CI_PROJECT_DIR"), "", 1)
+	if wd == "" {
+		wd = "."
+	}
+
+	// Collect data for templating
+	data := struct {
+		Dir, Commit, Job, PipelineID, PipelineURL, Stdout string
+	}{
+		Dir:         wd,
+		Commit:      os.Getenv("CI_COMMIT_SHORT_SHA"),
+		Job:         os.Getenv("CI_JOB_URL"),
+		PipelineID:  os.Getenv("CI_PIPELINE_ID"),
+		PipelineURL: os.Getenv("CI_PIPELINE_URL"),
+	}
+
+	// Create comment
+	err = c.CreateMergeRequestNote(notif, data)
+
+	return err
+}
