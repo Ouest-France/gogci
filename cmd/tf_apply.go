@@ -110,7 +110,7 @@ var tfApplyCmd = &cobra.Command{
 func init() {
 	tfApplyCmd.Flags().String("gitlab-url", os.Getenv("CI_API_V4_URL"), "Gitlab API url (default: CI_API_V4_URL) [GOGCI_GITLAB_URL]")
 	tfApplyCmd.Flags().String("gitlab-token", "", "Gitlab API token [GOGCI_GITLAB_TOKEN]")
-	tfApplyCmd.Flags().Bool("approved", false, "Execute apply only when the merge request is approved [GOGCI_APPROVED]")
+	tfApplyCmd.Flags().Bool("approved", true, "Execute apply only when the merge request is approved [GOGCI_APPROVED]")
 	tfApplyCmd.Flags().Bool("oldest", true, "Execute apply only when no older merge requests is in open state [GOGCI_OLDEST]")
 
 	tfCmd.AddCommand(tfApplyCmd)
