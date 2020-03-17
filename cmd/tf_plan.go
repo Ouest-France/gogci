@@ -41,7 +41,7 @@ var tfPlanCmd = &cobra.Command{
 		// Notify plan start
 		err := gc.TerraformPlanRunning()
 		if err != nil {
-			return err
+			return fmt.Errorf("error sending terraform plan running notification: %s", err)
 		}
 
 		// Execute plan
@@ -49,15 +49,15 @@ var tfPlanCmd = &cobra.Command{
 		if err != nil {
 			errGit := gc.TerraformPlanFailed(stripansi.Strip(string(stderr)))
 			if errGit != nil {
-				return fmt.Errorf("%s: %s", errGit, err)
+				return fmt.Errorf("error sending terraform plan failed notification: %s: %s", errGit, err)
 			}
-			return err
+			return fmt.Errorf("error during terraform plan: %s", err)
 		}
 
 		// Notify plan summary
 		err = gc.TerraformPlanSummary(stripansi.Strip(string(stdout)))
 		if err != nil {
-			return err
+			return fmt.Errorf("error sending terraform plan summary notification: %s", err)
 		}
 
 		return nil

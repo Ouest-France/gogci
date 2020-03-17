@@ -1,6 +1,8 @@
 package gitlab
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"strconv"
 
@@ -13,23 +15,26 @@ func (c *Client) CheckOldestMergeRequest() (bool, error) {
 	git := gitlab.NewClient(nil, c.Token)
 	err := git.SetBaseURL(c.URL)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to set gitlab client base url: %s", err)
 	}
 
 	// Get project and merge request IDs from Gitlab CI env vars
+	if os.Getenv("CI_PROJECT_ID") == "" || os.Getenv("CI_MERGE_REQUEST_IID") == "" {
+		return false, errors.New("CI_PROJECT_ID or CI_MERGE_REQUEST_IID env var is not defined, GOGCI must run in a Merge Request")
+	}
 	projectID, err := strconv.Atoi(os.Getenv("CI_PROJECT_ID"))
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to parse CI_PROJECT_ID env var: %s", err)
 	}
 	mrIID, err := strconv.Atoi(os.Getenv("CI_MERGE_REQUEST_IID"))
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to parse CI_MERGE_REQUEST_IID env var: %s", err)
 	}
 
 	// Get project open merge requests
 	mrs, _, err := git.MergeRequests.ListProjectMergeRequests(projectID, &gitlab.ListProjectMergeRequestsOptions{State: gitlab.String("opened")})
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to list project merge requests: %s", err)
 	}
 
 	// Checks if any merge requests passed have an older iid
