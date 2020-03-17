@@ -95,7 +95,7 @@ func (c *Client) TerraformInitFailed() error {
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
 	if err != nil {
-		fmt.Errorf("failed to create merge request comment: %s", err)
+		return fmt.Errorf("failed to create merge request comment: %s", err)
 	}
 
 	return nil
@@ -267,7 +267,7 @@ func (c *Client) TerraformApplyRunning() error {
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
 	if err != nil {
-		fmt.Errorf("failed to create merge request comment: %s", err)
+		return fmt.Errorf("failed to create merge request comment: %s", err)
 	}
 
 	return nil
@@ -306,7 +306,7 @@ func (c *Client) TerraformApplyFailed(output string) error {
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
 	if err != nil {
-		fmt.Errorf("failed to create merge request comment: %s", err)
+		return fmt.Errorf("failed to create merge request comment: %s", err)
 	}
 
 	return nil

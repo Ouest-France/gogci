@@ -50,7 +50,9 @@ func WriteCredentials(profile, accessKey, secretKey, sessionToken string) error 
 
 	// Save credentials file
 	err = credentials.SaveTo(credentialsPath)
-	return fmt.Errorf("failed to save aws credentials file to disk: %s", err)
+	if err != nil {
+		return fmt.Errorf("failed to save aws credentials file to disk: %s", err)
+	}
 
 	return nil
 }
