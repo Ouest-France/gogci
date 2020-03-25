@@ -1,6 +1,7 @@
 package awsconfig
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/mitchellh/go-homedir"
@@ -12,31 +13,31 @@ func WriteCredentials(profile, accessKey, secretKey, sessionToken string) error 
 	// Expand home config dir path
 	configPath, err := homedir.Expand("~/.aws")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to calculate aws file config path: %s", err)
 	}
 
 	// Create config dir
 	err = createConfigDir(configPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create aws config dir: %s", err)
 	}
 
 	// Expand home credentials path
 	credentialsPath, err := homedir.Expand("~/.aws/credentials")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to calculate aws credentials file path: %s", err)
 	}
 
 	// Create credentials file
 	err = createCredentialsFile(credentialsPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create aws credentials file: %s", err)
 	}
 
 	// Load credentials file
 	credentials, err := ini.Load(credentialsPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load aws credentials file: %s", err)
 	}
 
 	// Get profile section
@@ -49,8 +50,11 @@ func WriteCredentials(profile, accessKey, secretKey, sessionToken string) error 
 
 	// Save credentials file
 	err = credentials.SaveTo(credentialsPath)
+	if err != nil {
+		return fmt.Errorf("failed to save aws credentials file to disk: %s", err)
+	}
 
-	return err
+	return nil
 }
 
 func createConfigDir(path string) error {

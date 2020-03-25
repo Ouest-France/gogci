@@ -37,7 +37,7 @@ var vaultLoginCmd = &cobra.Command{
 		// Create vault client
 		vc, err := vault.NewClient(&vault.Config{Address: viper.GetString("vault-addr")})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create vault client: %s", err)
 		}
 
 		// AppRole login
@@ -47,19 +47,22 @@ var vaultLoginCmd = &cobra.Command{
 		}
 		secret, err := vc.Logical().Write("auth/approle/login", approle)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed Vault login by approle: %s", err)
 		}
 
 		// Expand home token path
 		tokenPath, err := homedir.Expand("~/.vault-token")
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to construct vault token path: %s", err)
 		}
 
 		// Write Vault token
 		err = ioutil.WriteFile(tokenPath, []byte(secret.Auth.ClientToken), 0600)
+		if err != nil {
+			return fmt.Errorf("failed to write Vault token to disk: %s", err)
+		}
 
-		return err
+		return nil
 	},
 }
 

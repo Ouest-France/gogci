@@ -42,9 +42,9 @@ var tfInitCmd = &cobra.Command{
 		if err != nil {
 			errGit := gc.TerraformInitFailed()
 			if errGit != nil {
-				return fmt.Errorf("%s: %s", errGit, err)
+				return fmt.Errorf("error sending terraform init failed notification: %s: %s", errGit, err)
 			}
-			return err
+			return fmt.Errorf("error during terraform apply: %s", err)
 		}
 
 		return nil

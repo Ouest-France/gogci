@@ -36,7 +36,7 @@ var vaultAwsStsCmd = &cobra.Command{
 		// Create vault client
 		vc, err := vault.NewClient(&vault.Config{Address: viper.GetString("vault-addr")})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create vault client: %s", err)
 		}
 
 		// AppRole login
@@ -46,14 +46,14 @@ var vaultAwsStsCmd = &cobra.Command{
 		}
 		secret, err := vc.Logical().Write("auth/approle/login", approle)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed Vault login by approle: %s", err)
 		}
 		vc.SetToken(secret.Auth.ClientToken)
 
 		// Get AWS STS credentials
 		secret, err = vc.Logical().Read(fmt.Sprintf("%s/sts/%s", viper.GetString("vault-aws-path"), viper.GetString("vault-aws-sts-role")))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get STS credentials from Vault: %s", err)
 		}
 
 		// Write AWS credentials file
@@ -61,8 +61,11 @@ var vaultAwsStsCmd = &cobra.Command{
 		secretKey := secret.Data["secret_key"].(string)
 		sessionToken := secret.Data["security_token"].(string)
 		err = awsconfig.WriteCredentials(viper.GetString("aws-profile"), accessKey, secretKey, sessionToken)
+		if err != nil {
+			return fmt.Errorf("failed to write aws credentials to disk: %s", err)
+		}
 
-		return err
+		return nil
 	},
 }
 
