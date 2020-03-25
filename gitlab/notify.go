@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -18,20 +19,20 @@ func (c *Client) CreateMergeRequestNote(tmpl string, data interface{}) error {
 	git := gitlab.NewClient(nil, c.Token)
 	err := git.SetBaseURL(c.URL)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to set gitlab client base url: %s", err)
 	}
 
 	// Init template
 	t, err := template.New("t").Parse(tmpl)
 	if err != nil {
-		return fmt.Errorf("failed to parse template: %s", err)
+		return fmt.Errorf("failed to parse merge request comment template: %s", err)
 	}
 
 	// Process template
 	var comment bytes.Buffer
 	err = t.Execute(&comment, data)
 	if err != nil {
-		return fmt.Errorf("failed to execute template: %s", err)
+		return fmt.Errorf("failed to execute merge request comment template: %s", err)
 	}
 	body := comment.String()
 
@@ -41,19 +42,25 @@ func (c *Client) CreateMergeRequestNote(tmpl string, data interface{}) error {
 	}
 
 	// Get project and merge request IDs from Gitlab CI env vars
+	if os.Getenv("CI_PROJECT_ID") == "" || os.Getenv("CI_MERGE_REQUEST_IID") == "" {
+		return errors.New("CI_PROJECT_ID or CI_MERGE_REQUEST_IID env var is not defined, GOGCI must run in a Merge Request")
+	}
 	projectID, err := strconv.Atoi(os.Getenv("CI_PROJECT_ID"))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse CI_PROJECT_ID env var: %s", err)
 	}
 	mrID, err := strconv.Atoi(os.Getenv("CI_MERGE_REQUEST_IID"))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse CI_MERGE_REQUEST_IID env var: %s", err)
 	}
 
 	// Create comment on MR
 	_, _, err = git.Notes.CreateMergeRequestNote(projectID, mrID, n)
+	if err != nil {
+		return fmt.Errorf("failed to create merge request comment: %s", err)
+	}
 
-	return err
+	return nil
 }
 
 func (c *Client) TerraformInitFailed() error {
@@ -65,7 +72,7 @@ func (c *Client) TerraformInitFailed() error {
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get working directory: %s", err)
 	}
 
 	// Extract subdir in path
@@ -87,8 +94,11 @@ func (c *Client) TerraformInitFailed() error {
 
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
+	if err != nil {
+		return fmt.Errorf("failed to create merge request comment: %s", err)
+	}
 
-	return err
+	return nil
 }
 
 func (c *Client) TerraformPlanRunning() error {
@@ -100,7 +110,7 @@ func (c *Client) TerraformPlanRunning() error {
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to working directory: %s", err)
 	}
 
 	// Extract subdir in path
@@ -122,8 +132,11 @@ func (c *Client) TerraformPlanRunning() error {
 
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
+	if err != nil {
+		return fmt.Errorf("failed to create merge request comment: %s", err)
+	}
 
-	return err
+	return nil
 }
 
 func (c *Client) TerraformPlanFailed(output string) error {
@@ -135,7 +148,7 @@ func (c *Client) TerraformPlanFailed(output string) error {
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get working directory: %s", err)
 	}
 
 	// Extract subdir in path
@@ -158,8 +171,11 @@ func (c *Client) TerraformPlanFailed(output string) error {
 
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
+	if err != nil {
+		return fmt.Errorf("failed to create merge request comment: %s", err)
+	}
 
-	return err
+	return nil
 }
 
 func (c *Client) TerraformPlanSummary(output string) error {
@@ -173,7 +189,7 @@ func (c *Client) TerraformPlanSummary(output string) error {
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get working directory: %s", err)
 	}
 
 	// Extract subdir in path
@@ -212,8 +228,11 @@ func (c *Client) TerraformPlanSummary(output string) error {
 
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
+	if err != nil {
+		return fmt.Errorf("failed to create merge request comment: %s", err)
+	}
 
-	return err
+	return nil
 }
 
 func (c *Client) TerraformApplyRunning() error {
@@ -225,7 +244,7 @@ func (c *Client) TerraformApplyRunning() error {
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get working directory: %s", err)
 	}
 
 	// Extract subdir in path
@@ -247,8 +266,11 @@ func (c *Client) TerraformApplyRunning() error {
 
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
+	if err != nil {
+		return fmt.Errorf("failed to create merge request comment: %s", err)
+	}
 
-	return err
+	return nil
 }
 
 func (c *Client) TerraformApplyFailed(output string) error {
@@ -260,7 +282,7 @@ func (c *Client) TerraformApplyFailed(output string) error {
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get working directory: %s", err)
 	}
 
 	// Extract subdir in path
@@ -283,8 +305,11 @@ func (c *Client) TerraformApplyFailed(output string) error {
 
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
+	if err != nil {
+		return fmt.Errorf("failed to create merge request comment: %s", err)
+	}
 
-	return err
+	return nil
 }
 
 func (c *Client) TerraformApplySummary(output string) error {
@@ -298,7 +323,7 @@ func (c *Client) TerraformApplySummary(output string) error {
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get working directory: %s", err)
 	}
 
 	// Extract subdir in path
@@ -310,7 +335,7 @@ func (c *Client) TerraformApplySummary(output string) error {
 	// Extract summary
 	r, err := regexp.Compile("([0-9]+) added, ([0-9]+) changed, ([0-9]+) destroyed")
 	if err != nil {
-		return fmt.Errorf("failed to compile regex: %s", err)
+		return fmt.Errorf("failed to compile terraform plan output regex: %s", err)
 	}
 	summary := r.FindString(output)
 
@@ -329,8 +354,11 @@ func (c *Client) TerraformApplySummary(output string) error {
 
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
+	if err != nil {
+		return fmt.Errorf("failed to create merge request comment: %s", err)
+	}
 
-	return err
+	return nil
 }
 
 func (c *Client) TerraformApplyNotApproved() error {
@@ -342,7 +370,7 @@ func (c *Client) TerraformApplyNotApproved() error {
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get working directory: %s", err)
 	}
 
 	// Extract subdir in path
@@ -364,6 +392,9 @@ func (c *Client) TerraformApplyNotApproved() error {
 
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
+	if err != nil {
+		return fmt.Errorf("failed to create merge request comment: %s", err)
+	}
 
 	return err
 }
@@ -377,7 +408,7 @@ func (c *Client) TerraformApplyBlocked() error {
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get working directory: %s", err)
 	}
 
 	// Extract subdir in path
@@ -399,6 +430,9 @@ func (c *Client) TerraformApplyBlocked() error {
 
 	// Create comment
 	err = c.CreateMergeRequestNote(notif, data)
+	if err != nil {
+		return fmt.Errorf("failed to create merge request comment: %s", err)
+	}
 
 	return err
 }

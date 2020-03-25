@@ -23,12 +23,12 @@ var tfApplyCmd = &cobra.Command{
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("Error binding viper to flag %q: %s", flag, err)
+				return fmt.Errorf("error binding viper to flag %q: %s", flag, err)
 			}
 
 			// Check flag has a value
 			if viper.GetString(flag) == "" {
-				return fmt.Errorf("Flag %q must be defined", flag)
+				return fmt.Errorf("flag %q must be defined", flag)
 			}
 		}
 
@@ -38,7 +38,7 @@ var tfApplyCmd = &cobra.Command{
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("Error binding viper to flag %q: %s", flag, err)
+				return fmt.Errorf("error binding viper to flag %q: %s", flag, err)
 			}
 		}
 
@@ -84,7 +84,7 @@ var tfApplyCmd = &cobra.Command{
 		// Notify apply start
 		err := gc.TerraformApplyRunning()
 		if err != nil {
-			return err
+			return fmt.Errorf("error sending terraform apply notification: %s", err)
 		}
 
 		// Execute Apply
@@ -92,15 +92,15 @@ var tfApplyCmd = &cobra.Command{
 		if err != nil {
 			errGit := gc.TerraformApplyFailed(stripansi.Strip(string(stderr)))
 			if errGit != nil {
-				return fmt.Errorf("%s: %s", errGit, err)
+				return fmt.Errorf("error during terraform apply: %s: %s", errGit, err)
 			}
-			return err
+			return fmt.Errorf("error during terraform apply: %s", err)
 		}
 
 		// Notify apply summary
 		err = gc.TerraformApplySummary(stripansi.Strip(string(stdout)))
 		if err != nil {
-			return err
+			return fmt.Errorf("error sending apply summery notification: %s", err)
 		}
 
 		return nil
