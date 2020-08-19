@@ -10,20 +10,21 @@ import (
 	"github.com/spf13/viper"
 )
 
-// vaultLoginCmd represents the sts command
+// vaultLoginCmd represents the vault login command
 var vaultLoginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Get Vault token and write it to .vault-token file",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 
-		for _, flag := range []string{"vault-addr", "vault-role-id", "vault-secret-id"} {
-
+		for _, flag := range []string{"vault-addr", "vault-method", "vault-role-id", "vault-secret-id", "vault-kubernetes-path", "vault-kubernetes-role"} {
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
 				return fmt.Errorf("Error binding viper to flag %q: %s", flag, err)
 			}
+		}
 
+		for _, flag := range []string{"vault-addr", "vault-method"} {
 			// Check flag has a value
 			if viper.GetString(flag) == "" {
 				return fmt.Errorf("Flag %q must be defined", flag)
@@ -40,14 +41,37 @@ var vaultLoginCmd = &cobra.Command{
 			return fmt.Errorf("failed to create vault client: %s", err)
 		}
 
-		// AppRole login
-		approle := map[string]interface{}{
-			"role_id":   viper.GetString("vault-role-id"),
-			"secret_id": viper.GetString("vault-secret-id"),
-		}
-		secret, err := vc.Logical().Write("auth/approle/login", approle)
-		if err != nil {
-			return fmt.Errorf("failed Vault login by approle: %s", err)
+		// Login
+		secret := &vault.Secret{}
+
+		switch method := viper.GetString("vault-method"); method {
+		case "approle":
+			// AppRole login
+			approle := map[string]interface{}{
+				"role_id":   viper.GetString("vault-role-id"),
+				"secret_id": viper.GetString("vault-secret-id"),
+			}
+			secret, err = vc.Logical().Write("auth/approle/login", approle)
+			if err != nil {
+				return fmt.Errorf("failed Vault login by approle: %s", err)
+			}
+
+		case "kubernetes":
+			// Get kubernetes service account
+			token, err := ioutil.ReadFile("/run/secrets/kubernetes.io/serviceaccount/token")
+			if err != nil {
+				return fmt.Errorf("failed to read kubernetes service account token: %s", err)
+			}
+
+			// Kubernetes login
+			approle := map[string]interface{}{
+				"role": viper.GetString("vault-kubernetes-role"),
+				"jwt":  string(token),
+			}
+			secret, err = vc.Logical().Write(fmt.Sprintf("auth/%s/login", viper.GetString("vault-kubernetes-path")), approle)
+			if err != nil {
+				return fmt.Errorf("failed Vault login by kubernetes: %s", err)
+			}
 		}
 
 		// Expand home token path
@@ -68,8 +92,11 @@ var vaultLoginCmd = &cobra.Command{
 
 func init() {
 	vaultLoginCmd.Flags().String("vault-addr", "", "Vault server address [GOGCI_VAULT_ADDR]")
+	vaultLoginCmd.Flags().String("vault-method", "approle", "Vault login method (default: approle) [GOGCI_VAULT_METHOD]")
 	vaultLoginCmd.Flags().String("vault-role-id", "", "Vault AppRole Role ID [GOGCI_VAULT_ROLE_ID]")
 	vaultLoginCmd.Flags().String("vault-secret-id", "", "Vault AppRole Secret ID [GOGCI_VAULT_SECRET_ID]")
+	vaultLoginCmd.Flags().String("vault-kubernetes-path", "kubernetes", "Vault Kubernetes login mount path [GOGCI_VAULT_KUBERNETES_PATH]")
+	vaultLoginCmd.Flags().String("vault-kubernetes-role", "", "Vault Kubernetes login role [GOGCI_VAULT_KUBERNETES_ROLE]")
 
 	vaultCmd.AddCommand(vaultLoginCmd)
 }
