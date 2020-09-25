@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 
@@ -46,15 +47,22 @@ var vaultEnvCmd = &cobra.Command{
 			return fmt.Errorf("failed to create vault client: %s", err)
 		}
 
-		// Read vault token on disk
-		tokenPath, err := homedir.Expand("~/.vault-token")
-		if err != nil {
-			return fmt.Errorf("failed to construct vault token path: %s", err)
-		}
+		// Read vault token from env
+		token := os.Getenv("VAULT_TOKEN")
 
-		token, err := ioutil.ReadFile(tokenPath)
-		if err != nil {
-			return fmt.Errorf("failed to read token: %s", err)
+		if token == "" {
+			// Read vault token on disk
+			tokenPath, err := homedir.Expand("~/.vault-token")
+			if err != nil {
+				return fmt.Errorf("failed to construct vault token path: %s", err)
+			}
+
+			tokenFile, err := ioutil.ReadFile(tokenPath)
+			if err != nil {
+				return fmt.Errorf("failed to read token: %s", err)
+			}
+
+			token = string(tokenFile)
 		}
 
 		// Set token to Vault client
