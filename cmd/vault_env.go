@@ -74,6 +74,11 @@ var vaultEnvCmd = &cobra.Command{
 			return fmt.Errorf("failed to get secret from Vault: %s", err)
 		}
 
+		// Check if secret exists
+		if secret == nil {
+			return fmt.Errorf("no secret found at path %s/%s", viper.GetString("vault-secret-prefix"), viper.GetString("vault-secret"))
+		}
+
 		// Check if data entry exists
 		data, ok := secret.Data["data"]
 		if !ok {
