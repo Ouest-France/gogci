@@ -74,8 +74,14 @@ var vaultEnvCmd = &cobra.Command{
 			return fmt.Errorf("failed to get secret from Vault: %s", err)
 		}
 
+		// Check if data entry exists
+		data, ok := secret.Data["data"]
+		if !ok {
+			return fmt.Errorf("no data found at path %s/%s", viper.GetString("vault-secret-prefix"), viper.GetString("vault-secret"))
+		}
+
 		// Export keys as env vars
-		for key, value := range secret.Data["data"].(map[string]interface{}) {
+		for key, value := range data.(map[string]interface{}) {
 			envName, err := convertToEnvName(key)
 			if err != nil {
 				return fmt.Errorf("failed to calculate env var name from vault secret: %s", err)
