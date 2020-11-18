@@ -23,7 +23,7 @@ var tfApplyCmd = &cobra.Command{
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("error binding viper to flag %q: %s", flag, err)
+				return fmt.Errorf("error binding viper to flag %q: %w", flag, err)
 			}
 
 			// Check flag has a value
@@ -38,7 +38,7 @@ var tfApplyCmd = &cobra.Command{
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("error binding viper to flag %q: %s", flag, err)
+				return fmt.Errorf("error binding viper to flag %q: %w", flag, err)
 			}
 		}
 
@@ -53,13 +53,13 @@ var tfApplyCmd = &cobra.Command{
 		if viper.GetBool("approved") {
 			approved, err := gc.CheckMergeRequestApproved()
 			if err != nil {
-				return fmt.Errorf("failed to check merge request approval: %s", err)
+				return fmt.Errorf("failed to check merge request approval: %w", err)
 			}
 
 			if !approved {
 				err = gc.TerraformApplyNotApproved()
 				if err != nil {
-					return fmt.Errorf("failed to send 'terraform apply not approved' comment: %s", err)
+					return fmt.Errorf("failed to send 'terraform apply not approved' comment: %w", err)
 				}
 
 				return fmt.Errorf("merge request must be approved to execute 'terraform apply'")
@@ -74,7 +74,7 @@ var tfApplyCmd = &cobra.Command{
 			}
 			if !oldest {
 				if err != nil {
-					return fmt.Errorf("failed to send 'terraform apply blocked' comment: %s", err)
+					return fmt.Errorf("failed to send 'terraform apply blocked' comment: %w", err)
 				}
 
 				return fmt.Errorf("all older merge requests must be closed to launch 'terraform apply'")
@@ -84,7 +84,7 @@ var tfApplyCmd = &cobra.Command{
 		// Notify apply start
 		err := gc.TerraformApplyRunning()
 		if err != nil {
-			return fmt.Errorf("error sending terraform apply notification: %s", err)
+			return fmt.Errorf("error sending terraform apply notification: %w", err)
 		}
 
 		// Execute Apply
@@ -92,15 +92,15 @@ var tfApplyCmd = &cobra.Command{
 		if err != nil {
 			errGit := gc.TerraformApplyFailed(stripansi.Strip(string(stderr)))
 			if errGit != nil {
-				return fmt.Errorf("error during terraform apply: %s: %s", errGit, err)
+				return fmt.Errorf("error during terraform apply: %s: %w", errGit, err)
 			}
-			return fmt.Errorf("error during terraform apply: %s", err)
+			return fmt.Errorf("error during terraform apply: %w", err)
 		}
 
 		// Notify apply summary
 		err = gc.TerraformApplySummary(stripansi.Strip(string(stdout)))
 		if err != nil {
-			return fmt.Errorf("error sending apply summery notification: %s", err)
+			return fmt.Errorf("error sending apply summery notification: %w", err)
 		}
 
 		return nil

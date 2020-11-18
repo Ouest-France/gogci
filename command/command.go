@@ -26,7 +26,7 @@ func Run(name string, args []string) (stdout, stderr []byte, code int, err error
 	// Launch command
 	err = cmd.Start()
 	if err != nil {
-		return stdout, stderr, cmd.ProcessState.ExitCode(), fmt.Errorf("command start failed: %s", err)
+		return stdout, stderr, cmd.ProcessState.ExitCode(), fmt.Errorf("command start failed: %w", err)
 	}
 
 	// Create goroutines for stdout/stderr capture
@@ -44,15 +44,15 @@ func Run(name string, args []string) (stdout, stderr []byte, code int, err error
 	// Wait end of command execution
 	err = cmd.Wait()
 	if err != nil {
-		return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), fmt.Errorf("command execution failed: %s", err)
+		return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), fmt.Errorf("command execution failed: %w", err)
 	}
 
 	// Return stdout/stderr
 	if errStdout != nil {
-		return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), fmt.Errorf("failed to capture stdout : %s", errStdout)
+		return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), fmt.Errorf("failed to capture stdout : %w", errStdout)
 	}
 	if errStderr != nil {
-		return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), fmt.Errorf("failed to capture stderr: %s", errStderr)
+		return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), fmt.Errorf("failed to capture stderr: %w", errStderr)
 	}
 
 	return stdoutBuf.Bytes(), stderrBuf.Bytes(), cmd.ProcessState.ExitCode(), nil
