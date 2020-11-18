@@ -25,7 +25,7 @@ var vaultEnvCmd = &cobra.Command{
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("Error binding viper to flag %q: %s", flag, err)
+				return fmt.Errorf("Error binding viper to flag %q: %w", flag, err)
 			}
 		}
 
@@ -44,7 +44,7 @@ var vaultEnvCmd = &cobra.Command{
 		// Create vault client
 		vc, err := vault.NewClient(&vault.Config{Address: viper.GetString("vault-addr")})
 		if err != nil {
-			return fmt.Errorf("failed to create vault client: %s", err)
+			return fmt.Errorf("failed to create vault client: %w", err)
 		}
 
 		// Read vault token from env
@@ -54,12 +54,12 @@ var vaultEnvCmd = &cobra.Command{
 			// Read vault token on disk
 			tokenPath, err := homedir.Expand("~/.vault-token")
 			if err != nil {
-				return fmt.Errorf("failed to construct vault token path: %s", err)
+				return fmt.Errorf("failed to construct vault token path: %w", err)
 			}
 
 			tokenFile, err := ioutil.ReadFile(tokenPath)
 			if err != nil {
-				return fmt.Errorf("failed to read token: %s", err)
+				return fmt.Errorf("failed to read token: %w", err)
 			}
 
 			token = string(tokenFile)
@@ -71,7 +71,7 @@ var vaultEnvCmd = &cobra.Command{
 		// Get Vault secret
 		secret, err := vc.Logical().Read(fmt.Sprintf("%s/%s", viper.GetString("vault-secret-prefix"), viper.GetString("vault-secret")))
 		if err != nil {
-			return fmt.Errorf("failed to get secret from Vault: %s", err)
+			return fmt.Errorf("failed to get secret from Vault: %w", err)
 		}
 
 		// Check if secret exists
@@ -89,7 +89,7 @@ var vaultEnvCmd = &cobra.Command{
 		for key, value := range data.(map[string]interface{}) {
 			envName, err := convertToEnvName(key)
 			if err != nil {
-				return fmt.Errorf("failed to calculate env var name from vault secret: %s", err)
+				return fmt.Errorf("failed to calculate env var name from vault secret: %w", err)
 			}
 			fmt.Printf("export %q=%q\n", envName, value)
 		}
@@ -103,7 +103,7 @@ func convertToEnvName(name string) (string, error) {
 	// Remove characters that are not alphanum or . _ -
 	r, err := regexp.Compile("[a-zA-Z0-9._-]")
 	if err != nil {
-		return "", fmt.Errorf("failed to compile regex: %s", err)
+		return "", fmt.Errorf("failed to compile regex: %w", err)
 	}
 	var sanitizedName string
 	for _, l := range name {

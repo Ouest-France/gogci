@@ -15,7 +15,7 @@ func (c *Client) CheckMergeRequestApproved() (bool, error) {
 	git := gitlab.NewClient(nil, c.Token)
 	err := git.SetBaseURL(c.URL)
 	if err != nil {
-		return false, fmt.Errorf("failed to set Gitlab client URL: %s", err)
+		return false, fmt.Errorf("failed to set Gitlab client URL: %w", err)
 	}
 
 	// Get project and merge request IDs from Gitlab CI env vars
@@ -24,17 +24,17 @@ func (c *Client) CheckMergeRequestApproved() (bool, error) {
 	}
 	projectID, err := strconv.Atoi(os.Getenv("CI_PROJECT_ID"))
 	if err != nil {
-		return false, fmt.Errorf("failed to parse CI_PROJECT_ID env var: %s", err)
+		return false, fmt.Errorf("failed to parse CI_PROJECT_ID env var: %w", err)
 	}
 	mrID, err := strconv.Atoi(os.Getenv("CI_MERGE_REQUEST_IID"))
 	if err != nil {
-		return false, fmt.Errorf("failed to parse CI_MERGE_REQUEST_IID env var: %s", err)
+		return false, fmt.Errorf("failed to parse CI_MERGE_REQUEST_IID env var: %w", err)
 	}
 
 	// Get merge request approval state
 	approvalState, _, err := git.MergeRequestApprovals.GetApprovalState(projectID, mrID)
 	if err != nil {
-		return false, fmt.Errorf("failed to get merge request approval state: %s", err)
+		return false, fmt.Errorf("failed to get merge request approval state: %w", err)
 	}
 
 	// Return true if all approval rules are ok

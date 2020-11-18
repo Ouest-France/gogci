@@ -21,7 +21,7 @@ var tfInitCmd = &cobra.Command{
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("Error binding viper to flag %q: %s", flag, err)
+				return fmt.Errorf("Error binding viper to flag %q: %w", flag, err)
 			}
 
 			// Check flag has a value
@@ -42,9 +42,9 @@ var tfInitCmd = &cobra.Command{
 		if err != nil {
 			errGit := gc.TerraformInitFailed()
 			if errGit != nil {
-				return fmt.Errorf("error sending terraform init failed notification: %s: %s", errGit, err)
+				return fmt.Errorf("error sending terraform init failed notification: %s: %w", errGit, err)
 			}
-			return fmt.Errorf("error during terraform apply: %s", err)
+			return fmt.Errorf("error during terraform apply: %w", err)
 		}
 
 		return nil

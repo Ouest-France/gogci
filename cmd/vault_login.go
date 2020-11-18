@@ -33,7 +33,7 @@ var vaultLoginCmd = &cobra.Command{
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("Error binding viper to flag %q: %s", flag, err)
+				return fmt.Errorf("Error binding viper to flag %q: %w", flag, err)
 			}
 		}
 
