@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	vault "github.com/hashicorp/vault/api"
 	homedir "github.com/mitchellh/go-homedir"
@@ -16,11 +17,23 @@ var vaultLoginCmd = &cobra.Command{
 	Short: "Get Vault token and write it to .vault-token file",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 
-		for _, flag := range []string{"vault-addr", "vault-method", "vault-role-id", "vault-secret-id", "vault-kubernetes-path", "vault-kubernetes-role", "export-token"} {
+		for _, flag := range []string{
+			"vault-addr",
+			"vault-method",
+			"vault-role-id",
+			"vault-secret-id",
+			"vault-kubernetes-path",
+			"vault-kubernetes-role",
+			"vault-jwt-path",
+			"vault-jwt-role",
+			"vault-jwt-token",
+			"vault-jwt-token-envvar",
+			"export-token",
+		} {
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("Error binding viper to flag %q: %s", flag, err)
+				return fmt.Errorf("Error binding viper to flag %q: %w", flag, err)
 			}
 		}
 
@@ -38,7 +51,7 @@ var vaultLoginCmd = &cobra.Command{
 		// Create vault client
 		vc, err := vault.NewClient(&vault.Config{Address: viper.GetString("vault-addr")})
 		if err != nil {
-			return fmt.Errorf("failed to create vault client: %s", err)
+			return fmt.Errorf("failed to create vault client: %w", err)
 		}
 
 		// Login
@@ -53,7 +66,7 @@ var vaultLoginCmd = &cobra.Command{
 			}
 			secret, err = vc.Logical().Write("auth/approle/login", approle)
 			if err != nil {
-				return fmt.Errorf("failed Vault login by approle: %s", err)
+				return fmt.Errorf("failed Vault login by approle: %w", err)
 			}
 
 		case "kubernetes":
@@ -64,13 +77,30 @@ var vaultLoginCmd = &cobra.Command{
 			}
 
 			// Kubernetes login
-			approle := map[string]interface{}{
+			kubeAuth := map[string]interface{}{
 				"role": viper.GetString("vault-kubernetes-role"),
 				"jwt":  string(token),
 			}
-			secret, err = vc.Logical().Write(fmt.Sprintf("auth/%s/login", viper.GetString("vault-kubernetes-path")), approle)
+			secret, err = vc.Logical().Write(fmt.Sprintf("auth/%s/login", viper.GetString("vault-kubernetes-path")), kubeAuth)
 			if err != nil {
-				return fmt.Errorf("failed Vault login by kubernetes: %s", err)
+				return fmt.Errorf("failed Vault login by kubernetes: %w", err)
+			}
+
+		case "jwt":
+			// Get JWT token
+			token := os.Getenv(viper.GetString("vault-jwt-token-envvar"))
+			if token == "" {
+				return fmt.Errorf("empty jwt token read from env var %q", viper.GetString("vault-jwt-token-envvar"))
+			}
+
+			// JWT login
+			jwtAuth := map[string]interface{}{
+				"role": viper.GetString("vault-jwt-role"),
+				"jwt":  string(token),
+			}
+			secret, err = vc.Logical().Write(fmt.Sprintf("auth/%s/login", viper.GetString("vault-jwt-path")), jwtAuth)
+			if err != nil {
+				return fmt.Errorf("failed Vault login by JWT: %w", err)
 			}
 		}
 
@@ -80,13 +110,13 @@ var vaultLoginCmd = &cobra.Command{
 			// Expand home token path
 			tokenPath, err := homedir.Expand("~/.vault-token")
 			if err != nil {
-				return fmt.Errorf("failed to construct vault token path: %s", err)
+				return fmt.Errorf("failed to construct vault token path: %w", err)
 			}
 
 			// Write Vault token
 			err = ioutil.WriteFile(tokenPath, []byte(secret.Auth.ClientToken), 0600)
 			if err != nil {
-				return fmt.Errorf("failed to write Vault token to disk: %s", err)
+				return fmt.Errorf("failed to write Vault token to disk: %w", err)
 			}
 		}
 
@@ -101,6 +131,9 @@ func init() {
 	vaultLoginCmd.Flags().String("vault-secret-id", "", "Vault AppRole Secret ID [GOGCI_VAULT_SECRET_ID]")
 	vaultLoginCmd.Flags().String("vault-kubernetes-path", "kubernetes", "Vault Kubernetes login mount path [GOGCI_VAULT_KUBERNETES_PATH]")
 	vaultLoginCmd.Flags().String("vault-kubernetes-role", "", "Vault Kubernetes login role [GOGCI_VAULT_KUBERNETES_ROLE]")
+	vaultLoginCmd.Flags().String("vault-jwt-path", "jwt", "Vault JWT login mount path [GOGCI_VAULT_JWT_PATH]")
+	vaultLoginCmd.Flags().String("vault-jwt-role", "", "Vault JWT login role [GOGCI_VAULT_JWT_ROLE]")
+	vaultLoginCmd.Flags().String("vault-jwt-token-envvar", "CI_JOB_JWT", "Vault JWT environment var name for token (default: CI_JOB_JWT) [GOGCI_VAULT_JWT_TOKEN_ENVVAR]")
 	vaultLoginCmd.Flags().Bool("export-token", false, "Export Vault Token [GOGCI_EXPORT_TOKEN]")
 
 	vaultCmd.AddCommand(vaultLoginCmd)
