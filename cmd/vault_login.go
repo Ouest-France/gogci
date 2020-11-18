@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -43,10 +42,6 @@ var vaultLoginCmd = &cobra.Command{
 			if viper.GetString(flag) == "" {
 				return fmt.Errorf("Flag %q must be defined", flag)
 			}
-		}
-
-		if viper.GetString("vault-jwt-token") == "" && viper.GetString("vault-jwt-token-envvar") == "" {
-			return errors.New("One of vault-jwt-token or vault-jwt-token-envvar flags must be defined")
 		}
 
 		return nil
@@ -93,17 +88,9 @@ var vaultLoginCmd = &cobra.Command{
 
 		case "jwt":
 			// Get JWT token
-			var token string
-			if viper.GetString("vault-jwt-token-envvar") == "" {
-				token := viper.GetString("vault-jwt-token")
-				if token == "" {
-					return fmt.Errorf("empty jwt token read from flag %q", viper.GetString("vault-jwt-token"))
-				}
-			} else {
-				token := os.Getenv(viper.GetString("vault-jwt-token-envvar"))
-				if token == "" {
-					return fmt.Errorf("empty jwt token read from env var %q", viper.GetString("vault-jwt-token-envvar"))
-				}
+			token := os.Getenv(viper.GetString("vault-jwt-token-envvar"))
+			if token == "" {
+				return fmt.Errorf("empty jwt token read from env var %q", viper.GetString("vault-jwt-token-envvar"))
 			}
 
 			// JWT login
@@ -146,8 +133,7 @@ func init() {
 	vaultLoginCmd.Flags().String("vault-kubernetes-role", "", "Vault Kubernetes login role [GOGCI_VAULT_KUBERNETES_ROLE]")
 	vaultLoginCmd.Flags().String("vault-jwt-path", "jwt", "Vault JWT login mount path [GOGCI_VAULT_JWT_PATH]")
 	vaultLoginCmd.Flags().String("vault-jwt-role", "", "Vault JWT login role [GOGCI_VAULT_JWT_ROLE]")
-	vaultLoginCmd.Flags().String("vault-jwt-token", "", "Vault JWT environment token [GOGCI_VAULT_JWT_TOKEN]")
-	vaultLoginCmd.Flags().String("vault-jwt-token-envvar", "", "Vault JWT environment var name for token (override vault-jwt-token) [GOGCI_VAULT_JWT_TOKEN_ENVVAR]")
+	vaultLoginCmd.Flags().String("vault-jwt-token-envvar", "CI_JOB_JWT", "Vault JWT environment var name for token (default: CI_JOB_JWT) [GOGCI_VAULT_JWT_TOKEN_ENVVAR]")
 	vaultLoginCmd.Flags().Bool("export-token", false, "Export Vault Token [GOGCI_EXPORT_TOKEN]")
 
 	vaultCmd.AddCommand(vaultLoginCmd)
