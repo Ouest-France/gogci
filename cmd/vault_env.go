@@ -83,7 +83,7 @@ var vaultEnvCmd = &cobra.Command{
 		}
 
 		// Template secret
-		secretPathTmpl, err := template.New("prefix").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-secret"))
+		secretPathTmpl, err := template.New("secret").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-secret"))
 		if err != nil {
 			return fmt.Errorf("failed to create secretPath template: %w", err)
 		}
