@@ -3,6 +3,7 @@ module github.com/Ouest-France/gogci
 go 1.14
 
 require (
+	github.com/Masterminds/sprig/v3 v3.1.0
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/fatih/color v1.9.0
 	github.com/hashicorp/vault/api v1.0.4

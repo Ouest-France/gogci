@@ -1,13 +1,16 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
+	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	vault "github.com/hashicorp/vault/api"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -68,21 +71,43 @@ var vaultEnvCmd = &cobra.Command{
 		// Set token to Vault client
 		vc.SetToken(string(token))
 
+		// Template prefix
+		prefixTmpl, err := template.New("prefix").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-secret-prefix"))
+		if err != nil {
+			return fmt.Errorf("failed to create prefix template: %w", err)
+		}
+
+		var prefix bytes.Buffer
+		if err := prefixTmpl.Execute(&prefix, nil); err != nil {
+			return err
+		}
+
+		// Template secret
+		secretPathTmpl, err := template.New("secret").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-secret"))
+		if err != nil {
+			return fmt.Errorf("failed to create secretPath template: %w", err)
+		}
+
+		var secretPath bytes.Buffer
+		if err := secretPathTmpl.Execute(&secretPath, nil); err != nil {
+			return err
+		}
+
 		// Get Vault secret
-		secret, err := vc.Logical().Read(fmt.Sprintf("%s/%s", viper.GetString("vault-secret-prefix"), viper.GetString("vault-secret")))
+		secret, err := vc.Logical().Read(fmt.Sprintf("%s/%s", prefix.String(), secretPath.String()))
 		if err != nil {
 			return fmt.Errorf("failed to get secret from Vault: %w", err)
 		}
 
 		// Check if secret exists
 		if secret == nil {
-			return fmt.Errorf("no secret found at path %s/%s", viper.GetString("vault-secret-prefix"), viper.GetString("vault-secret"))
+			return fmt.Errorf("no secret found at path %s/%s", prefix.String(), secretPath.String())
 		}
 
 		// Check if data entry exists
 		data, ok := secret.Data["data"]
 		if !ok {
-			return fmt.Errorf("no data found at path %s/%s", viper.GetString("vault-secret-prefix"), viper.GetString("vault-secret"))
+			return fmt.Errorf("no data found at path %s/%s", prefix.String(), secretPath.String())
 		}
 
 		// Export keys as env vars
