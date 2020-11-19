@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
+	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	vault "github.com/hashicorp/vault/api"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -27,7 +29,6 @@ var vaultLoginCmd = &cobra.Command{
 			"vault-jwt-path",
 			"vault-jwt-role",
 			"vault-jwt-token",
-			"vault-jwt-token-envvar",
 			"export-token",
 		} {
 			// Bind viper to flag
@@ -76,9 +77,20 @@ var vaultLoginCmd = &cobra.Command{
 				return fmt.Errorf("failed to read kubernetes service account token: %s", err)
 			}
 
+			// Get kubernetes role
+			roleTmpl, err := template.New("kuberole").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-kubernetes-role"))
+			if err != nil {
+				return fmt.Errorf("failed to create role template: %w", err)
+			}
+
+			var role bytes.Buffer
+			if err := roleTmpl.Execute(&role, nil); err != nil {
+				return err
+			}
+
 			// Kubernetes login
 			kubeAuth := map[string]interface{}{
-				"role": viper.GetString("vault-kubernetes-role"),
+				"role": role.String(),
 				"jwt":  string(token),
 			}
 			secret, err = vc.Logical().Write(fmt.Sprintf("auth/%s/login", viper.GetString("vault-kubernetes-path")), kubeAuth)
@@ -88,15 +100,31 @@ var vaultLoginCmd = &cobra.Command{
 
 		case "jwt":
 			// Get JWT token
-			token := os.Getenv(viper.GetString("vault-jwt-token-envvar"))
-			if token == "" {
-				return fmt.Errorf("empty jwt token read from env var %q", viper.GetString("vault-jwt-token-envvar"))
+			tokenTmpl, err := template.New("jwttoken").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-jwt-token"))
+			if err != nil {
+				return fmt.Errorf("failed to create token template: %w", err)
+			}
+
+			var token bytes.Buffer
+			if err := tokenTmpl.Execute(&token, nil); err != nil {
+				return err
+			}
+
+			// Get JWT role
+			roleTmpl, err := template.New("jwtrole").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-jwt-role"))
+			if err != nil {
+				return fmt.Errorf("failed to create role template: %w", err)
+			}
+
+			var role bytes.Buffer
+			if err := roleTmpl.Execute(&role, nil); err != nil {
+				return err
 			}
 
 			// JWT login
 			jwtAuth := map[string]interface{}{
-				"role": viper.GetString("vault-jwt-role"),
-				"jwt":  string(token),
+				"role": role.String(),
+				"jwt":  token.String(),
 			}
 			secret, err = vc.Logical().Write(fmt.Sprintf("auth/%s/login", viper.GetString("vault-jwt-path")), jwtAuth)
 			if err != nil {
@@ -133,7 +161,7 @@ func init() {
 	vaultLoginCmd.Flags().String("vault-kubernetes-role", "", "Vault Kubernetes login role [GOGCI_VAULT_KUBERNETES_ROLE]")
 	vaultLoginCmd.Flags().String("vault-jwt-path", "jwt", "Vault JWT login mount path [GOGCI_VAULT_JWT_PATH]")
 	vaultLoginCmd.Flags().String("vault-jwt-role", "", "Vault JWT login role [GOGCI_VAULT_JWT_ROLE]")
-	vaultLoginCmd.Flags().String("vault-jwt-token-envvar", "CI_JOB_JWT", "Vault JWT environment var name for token (default: CI_JOB_JWT) [GOGCI_VAULT_JWT_TOKEN_ENVVAR]")
+	vaultLoginCmd.Flags().String("vault-jwt-token", "", "Vault JWT token [GOGCI_VAULT_JWT_TOKEN]")
 	vaultLoginCmd.Flags().Bool("export-token", false, "Export Vault Token [GOGCI_EXPORT_TOKEN]")
 
 	vaultCmd.AddCommand(vaultLoginCmd)
