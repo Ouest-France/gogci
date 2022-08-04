@@ -12,10 +12,9 @@ import (
 func (c *Client) CheckOldestMergeRequest() (bool, error) {
 
 	// Init gitlab client
-	git := gitlab.NewClient(nil, c.Token)
-	err := git.SetBaseURL(c.URL)
+	git, err := gitlab.NewClient(c.Token, gitlab.WithBaseURL(c.URL))
 	if err != nil {
-		return false, fmt.Errorf("failed to set gitlab client base url: %w", err)
+		return false, fmt.Errorf("failed to init Gitlab client: %w", err)
 	}
 
 	// Get project and merge request IDs from Gitlab CI env vars

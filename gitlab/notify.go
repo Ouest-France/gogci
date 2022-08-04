@@ -16,10 +16,9 @@ import (
 func (c *Client) CreateMergeRequestNote(tmpl string, data interface{}) error {
 
 	// Init gitlab client
-	git := gitlab.NewClient(nil, c.Token)
-	err := git.SetBaseURL(c.URL)
+	git, err := gitlab.NewClient(c.Token, gitlab.WithBaseURL(c.URL))
 	if err != nil {
-		return fmt.Errorf("failed to set gitlab client base url: %w", err)
+		return fmt.Errorf("failed to init gitlab client: %w", err)
 	}
 
 	// Init template
