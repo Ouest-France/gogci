@@ -21,14 +21,15 @@ import (
 var vaultEnvCmd = &cobra.Command{
 	Use:   "env",
 	Short: "Get a Vault secret and export all keys as env vars",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRun: func(cmd *cobra.Command, args []string) {
 
 		for _, flag := range []string{"vault-addr", "vault-secret", "vault-secret-prefix"} {
 
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("Error binding viper to flag %q: %w", flag, err)
+				fmt.Printf("echo \"echo error binding viper to flag %q: %s\"", flag, err)
+				return
 			}
 		}
 
@@ -36,11 +37,10 @@ var vaultEnvCmd = &cobra.Command{
 
 			// Check flag has a value
 			if viper.GetString(flag) == "" {
-				return fmt.Errorf("Flag %q must be defined", flag)
+				fmt.Printf("echo \"echo flag %s must be defined\"", flag)
+				return
 			}
 		}
-
-		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 
