@@ -42,12 +42,13 @@ var vaultEnvCmd = &cobra.Command{
 
 		return nil
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 
 		// Create vault client
 		vc, err := vault.NewClient(&vault.Config{Address: viper.GetString("vault-addr")})
 		if err != nil {
-			return fmt.Errorf("failed to create vault client: %w", err)
+			fmt.Printf("echo \"echo failed to create vault client: %s\"", err)
+			return
 		}
 
 		// Read vault token from env
@@ -57,12 +58,14 @@ var vaultEnvCmd = &cobra.Command{
 			// Read vault token on disk
 			tokenPath, err := homedir.Expand("~/.vault-token")
 			if err != nil {
-				return fmt.Errorf("failed to construct vault token path: %w", err)
+				fmt.Printf("echo \"echo failed to construct vault token path: %s\"", err)
+				return
 			}
 
 			tokenFile, err := ioutil.ReadFile(tokenPath)
 			if err != nil {
-				return fmt.Errorf("failed to read token: %w", err)
+				fmt.Printf("echo \"echo failed to read token: %s\"", err)
+				return
 			}
 
 			token = string(tokenFile)
@@ -74,52 +77,58 @@ var vaultEnvCmd = &cobra.Command{
 		// Template prefix
 		prefixTmpl, err := template.New("prefix").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-secret-prefix"))
 		if err != nil {
-			return fmt.Errorf("failed to create prefix template: %w", err)
+			fmt.Printf("echo \"echo failed to create prefix template: %s\"", err)
+			return
 		}
 
 		var prefix bytes.Buffer
 		if err := prefixTmpl.Execute(&prefix, nil); err != nil {
-			return err
+			fmt.Printf("echo \"echo %s\"", err)
+			return
 		}
 
 		// Template secret
 		secretPathTmpl, err := template.New("secret").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-secret"))
 		if err != nil {
-			return fmt.Errorf("failed to create secretPath template: %w", err)
+			fmt.Printf("echo \"echo failed to create secretPath template: %s\"", err)
+			return
 		}
 
 		var secretPath bytes.Buffer
 		if err := secretPathTmpl.Execute(&secretPath, nil); err != nil {
-			return err
+			fmt.Printf("echo \"echo %s\"", err)
+			return
 		}
 
 		// Get Vault secret
 		secret, err := vc.Logical().Read(fmt.Sprintf("%s/%s", prefix.String(), secretPath.String()))
 		if err != nil {
-			return fmt.Errorf("failed to get secret from Vault: %w", err)
+			fmt.Printf("echo \"echo failed to get secret from Vault: %s\"", err)
+			return
 		}
 
 		// Check if secret exists
 		if secret == nil {
-			return fmt.Errorf("no secret found at path %s/%s", prefix.String(), secretPath.String())
+			fmt.Printf("echo \"echo no secret found at path %s/%s\"", prefix.String(), secretPath.String())
+			return
 		}
 
 		// Check if data entry exists
 		data, ok := secret.Data["data"]
 		if !ok {
-			return fmt.Errorf("no data found at path %s/%s", prefix.String(), secretPath.String())
+			fmt.Printf("echo \"echo no data found at path %s/%s\"", prefix.String(), secretPath.String())
+			return
 		}
 
 		// Export keys as env vars
 		for key, value := range data.(map[string]interface{}) {
 			envName, err := convertToEnvName(key)
 			if err != nil {
-				return fmt.Errorf("failed to calculate env var name from vault secret: %w", err)
+				fmt.Printf("echo \"echo failed to calculate env var name from vault secret: %s\"", err)
+				return
 			}
 			fmt.Printf("export %q=%q\n", envName, value)
 		}
-
-		return nil
 	},
 }
 
