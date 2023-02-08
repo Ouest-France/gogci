@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 
-	"github.com/Ouest-France/gogci/awsconfig"
 	vault "github.com/hashicorp/vault/api"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -13,69 +15,74 @@ import (
 var vaultAwsStsCmd = &cobra.Command{
 	Use:   "sts",
 	Short: "Get STS credentials from AWS vault secret backend and write them to .aws/credentials file",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRun: func(cmd *cobra.Command, args []string) {
 
-		for _, flag := range []string{"vault-addr", "vault-role-id", "vault-secret-id", "vault-aws-path", "vault-aws-sts-role", "aws-profile"} {
+		for _, flag := range []string{"vault-addr", "vault-aws-path", "vault-aws-sts-role"} {
 
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("Error binding viper to flag %q: %w", flag, err)
+				ErrorToEval(fmt.Errorf("failed to bind flag %s to viper: %s", flag, err))
+				return
 			}
 
 			// Check flag has a value
 			if viper.GetString(flag) == "" {
-				return fmt.Errorf("Flag %q must be defined", flag)
+				ErrorToEval(fmt.Errorf("flag %s must be defined", flag))
 			}
 		}
-
-		return nil
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 
 		// Create vault client
 		vc, err := vault.NewClient(&vault.Config{Address: viper.GetString("vault-addr")})
 		if err != nil {
-			return fmt.Errorf("failed to create vault client: %w", err)
+			ErrorToEval(fmt.Errorf("failed to create vault client: %w", err))
+			return
+
 		}
 
-		// AppRole login
-		approle := map[string]interface{}{
-			"role_id":   viper.GetString("vault-role-id"),
-			"secret_id": viper.GetString("vault-secret-id"),
+		// Read vault token from env
+		token := os.Getenv("VAULT_TOKEN")
+
+		if token == "" {
+			// Read vault token on disk
+			tokenPath, err := homedir.Expand("~/.vault-token")
+			if err != nil {
+				ErrorToEval(fmt.Errorf("failed to construct vault token path: %w", err))
+				return
+			}
+
+			tokenFile, err := ioutil.ReadFile(tokenPath)
+			if err != nil {
+				ErrorToEval(fmt.Errorf("failed to read token: %w", err))
+				return
+			}
+
+			token = string(tokenFile)
 		}
-		secret, err := vc.Logical().Write("auth/approle/login", approle)
-		if err != nil {
-			return fmt.Errorf("failed Vault login by approle: %w", err)
-		}
-		vc.SetToken(secret.Auth.ClientToken)
+
+		// Set token to Vault client
+		vc.SetToken(string(token))
 
 		// Get AWS STS credentials
-		secret, err = vc.Logical().Read(fmt.Sprintf("%s/sts/%s", viper.GetString("vault-aws-path"), viper.GetString("vault-aws-sts-role")))
+		secret, err := vc.Logical().Read(fmt.Sprintf("%s/sts/%s", viper.GetString("vault-aws-path"), viper.GetString("vault-aws-sts-role")))
 		if err != nil {
-			return fmt.Errorf("failed to get STS credentials from Vault: %w", err)
+			ErrorToEval(fmt.Errorf("failed to get STS credentials from Vault: %w", err))
+			return
 		}
 
-		// Write AWS credentials file
-		accessKey := secret.Data["access_key"].(string)
-		secretKey := secret.Data["secret_key"].(string)
-		sessionToken := secret.Data["security_token"].(string)
-		err = awsconfig.WriteCredentials(viper.GetString("aws-profile"), accessKey, secretKey, sessionToken)
-		if err != nil {
-			return fmt.Errorf("failed to write aws credentials to disk: %w", err)
-		}
-
-		return nil
+		// Export AWS credentials as environment variables
+		fmt.Printf("export AWS_ACCESS_KEY_ID=%q\n", secret.Data["access_key"].(string))
+		fmt.Printf("export AWS_SECRET_ACCESS_KEY=%q\n", secret.Data["secret_key"].(string))
+		fmt.Printf("export AWS_SESSION_TOKEN=%q\n", secret.Data["security_token"].(string))
 	},
 }
 
 func init() {
 	vaultAwsStsCmd.Flags().String("vault-addr", "", "Vault server address [GOGCI_VAULT_ADDR]")
-	vaultAwsStsCmd.Flags().String("vault-role-id", "", "Vault AppRole Role ID [GOGCI_VAULT_ROLE_ID]")
-	vaultAwsStsCmd.Flags().String("vault-secret-id", "", "Vault AppRole Secret ID [GOGCI_VAULT_SECRET_ID]")
-	vaultAwsStsCmd.Flags().String("vault-aws-path", "aws", "Vault AWS backend mount [GOGCI_VAULT_AWS_PATH]")
+	vaultAwsStsCmd.Flags().String("vault-aws-path", "aws_sts", "Vault AWS backend mount [GOGCI_VAULT_AWS_PATH]")
 	vaultAwsStsCmd.Flags().String("vault-aws-sts-role", "", "Vault AWS STS role [GOGCI_VAULT_AWS_STS_ROLE]")
-	vaultAwsStsCmd.Flags().String("aws-profile", "default", "AWS config/credentials profile [GOGCI_AWS_PROFILE]")
 
 	vaultAwsCmd.AddCommand(vaultAwsStsCmd)
 }
