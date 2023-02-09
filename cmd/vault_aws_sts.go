@@ -64,6 +64,7 @@ var vaultAwsStsCmd = &cobra.Command{
 
 		// Set token to Vault client
 		vc.SetToken(string(token))
+		fmt.Println(vc.Token())
 
 		// Get AWS STS credentials
 		secret, err := vc.Logical().Read(fmt.Sprintf("%s/sts/%s", viper.GetString("vault-aws-path"), viper.GetString("vault-aws-sts-role")))

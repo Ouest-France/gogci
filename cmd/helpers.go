@@ -43,5 +43,5 @@ func convertToEnvName(name string) (string, error) {
 
 // ErrorToEval print an error string that can be evaluated by a shell to print
 func ErrorToEval(err error) {
-	fmt.Printf("echo \"echo %s\"", err)
+	fmt.Printf("echo \"echo %s\"\n", err)
 }
