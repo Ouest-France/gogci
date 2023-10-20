@@ -1,15 +1,8 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"text/template"
-
-	"github.com/Masterminds/sprig/v3"
 	vault "github.com/hashicorp/vault/api"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -49,76 +42,29 @@ var vaultEnvCmd = &cobra.Command{
 		}
 
 		// Read vault token from env
-		token := os.Getenv("VAULT_TOKEN")
-
-		if token == "" {
-			// Read vault token on disk
-			tokenPath, err := homedir.Expand("~/.vault-token")
-			if err != nil {
-				ErrorToEval(fmt.Errorf("failed to construct vault token path: %s", err))
-				return
-			}
-
-			tokenFile, err := ioutil.ReadFile(tokenPath)
-			if err != nil {
-				ErrorToEval(fmt.Errorf("failed to read token: %s", err))
-				return
-			}
-
-			token = string(tokenFile)
+		token, err := getVaultToken()
+		if err != nil {
+			ErrorToEval(fmt.Errorf("failed to get token: %s", err))
+			return
 		}
-
 		// Set token to Vault client
 		vc.SetToken(string(token))
 
-		// Template prefix
-		prefixTmpl, err := template.New("prefix").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-secret-prefix"))
+		secretPath, err := getSecretPath()
 		if err != nil {
-			ErrorToEval(fmt.Errorf("failed to create prefix template: %s", err))
+			ErrorToEval(fmt.Errorf("failed to get secret path: %s", err))
 			return
 		}
 
-		var prefix bytes.Buffer
-		if err := prefixTmpl.Execute(&prefix, nil); err != nil {
-			ErrorToEval(fmt.Errorf("failed to execute prefix template: %s", err))
-			return
-		}
-
-		// Template secret
-		secretPathTmpl, err := template.New("secret").Funcs(sprig.TxtFuncMap()).Parse(viper.GetString("vault-secret"))
-		if err != nil {
-			ErrorToEval(fmt.Errorf("failed to create secretPath template: %s", err))
-			return
-		}
-
-		var secretPath bytes.Buffer
-		if err := secretPathTmpl.Execute(&secretPath, nil); err != nil {
-			ErrorToEval(fmt.Errorf("failed to execute secretPath template: %s", err))
-			return
-		}
-
-		// Get Vault secret
-		secret, err := vc.Logical().Read(fmt.Sprintf("%s/%s", prefix.String(), secretPath.String()))
+		// Get Vault secret data
+		data, err := getSecretData(vc, secretPath)
 		if err != nil {
 			ErrorToEval(fmt.Errorf("failed to get secret from Vault: %s", err))
 			return
 		}
 
-		// Check if secret exists
-		if secret == nil {
-			ErrorToEval(fmt.Errorf("no secret found at path %s/%s", prefix.String(), secretPath.String()))
-			return
-		}
-
-		// Check if data entry exists
-		data, ok := secret.Data["data"]
-		if !ok {
-			ErrorToEval(fmt.Errorf("no data found at path %s/%s", prefix.String(), secretPath.String()))
-			return
-		}
-
 		// Export keys as env vars
-		for key, value := range data.(map[string]interface{}) {
+		for key, value := range data {
 			envName, err := convertToEnvName(key)
 			if err != nil {
 				ErrorToEval(fmt.Errorf("failed to calculate env var name from vault secret: %s", err))

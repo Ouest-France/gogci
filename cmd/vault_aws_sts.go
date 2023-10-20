@@ -2,11 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-
 	vault "github.com/hashicorp/vault/api"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -43,23 +39,10 @@ var vaultAwsStsCmd = &cobra.Command{
 		}
 
 		// Read vault token from env
-		token := os.Getenv("VAULT_TOKEN")
-
-		if token == "" {
-			// Read vault token on disk
-			tokenPath, err := homedir.Expand("~/.vault-token")
-			if err != nil {
-				ErrorToEval(fmt.Errorf("failed to construct vault token path: %w", err))
-				return
-			}
-
-			tokenFile, err := ioutil.ReadFile(tokenPath)
-			if err != nil {
-				ErrorToEval(fmt.Errorf("failed to read token: %w", err))
-				return
-			}
-
-			token = string(tokenFile)
+		token, err := getVaultToken()
+		if err != nil {
+			ErrorToEval(fmt.Errorf("failed to get token: %s", err))
+			return
 		}
 
 		// Set token to Vault client
