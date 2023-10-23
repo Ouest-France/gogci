@@ -17,6 +17,7 @@ jobs:
 
       - name: Run Golang CI Lint
         uses: golangci/golangci-lint-action@v2
+        timeout-minutes: 5
 
       - name: Build
         run: CGO_ENABLED=0 go build -ldflags="-w -s" -o gogci
