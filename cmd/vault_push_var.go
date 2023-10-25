@@ -63,7 +63,7 @@ var vaultPushEnv = &cobra.Command{
 			ErrorToEval(fmt.Errorf("failed to get secret from Vault: %s", err))
 			return
 		}
-		if err.Error() == "no secret found at path "+secretPath {
+		if err != nil && err.Error() == "no secret found at path "+secretPath {
 			data = make(map[string]interface{})
 		}
 
