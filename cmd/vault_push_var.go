@@ -59,9 +59,12 @@ var vaultPushEnv = &cobra.Command{
 
 		// Get Vault secret data
 		data, err := getSecretData(vc, secretPath)
-		if err != nil {
+		if err != nil && err.Error() != "no secret found at path "+secretPath {
 			ErrorToEval(fmt.Errorf("failed to get secret from Vault: %s", err))
 			return
+		}
+		if err.Error() == "no secret found at path "+secretPath {
+			data = make(map[string]interface{})
 		}
 
 		key := viper.GetString("vault-push-secret-key")
