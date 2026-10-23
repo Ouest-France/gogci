@@ -3,7 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
@@ -72,7 +72,7 @@ var vaultLoginCmd = &cobra.Command{
 
 		case "kubernetes":
 			// Get kubernetes service account
-			token, err := ioutil.ReadFile("/run/secrets/kubernetes.io/serviceaccount/token")
+			token, err := os.ReadFile("/run/secrets/kubernetes.io/serviceaccount/token")
 			if err != nil {
 				return fmt.Errorf("failed to read kubernetes service account token: %s", err)
 			}
@@ -142,7 +142,7 @@ var vaultLoginCmd = &cobra.Command{
 			}
 
 			// Write Vault token
-			err = ioutil.WriteFile(tokenPath, []byte(secret.Auth.ClientToken), 0600)
+			err = os.WriteFile(tokenPath, []byte(secret.Auth.ClientToken), 0600)
 			if err != nil {
 				return fmt.Errorf("failed to write Vault token to disk: %w", err)
 			}

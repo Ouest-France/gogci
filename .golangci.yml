@@ -1,0 +1,8 @@
+version: "2"
+linters:
+  exclusions:
+    rules:
+      - path: gitlab/
+        text: "SA1019"
+        linters:
+          - staticcheck
