@@ -82,7 +82,6 @@ func createCredentialsFile(path string) error {
 	if err != nil {
 		return err
 	}
-	defer credentialsFile.Close()
 
-	return err
+	return credentialsFile.Close()
 }

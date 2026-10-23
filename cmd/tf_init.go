@@ -21,12 +21,12 @@ var tfInitCmd = &cobra.Command{
 			// Bind viper to flag
 			err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
 			if err != nil {
-				return fmt.Errorf("Error binding viper to flag %q: %w", flag, err)
+				return fmt.Errorf("error binding viper to flag %q: %w", flag, err)
 			}
 
 			// Check flag has a value
 			if viper.GetString(flag) == "" {
-				return fmt.Errorf("Flag %q must be defined", flag)
+				return fmt.Errorf("flag %q must be defined", flag)
 			}
 		}
 
