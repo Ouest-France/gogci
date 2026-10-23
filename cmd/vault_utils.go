@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/vault/api"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
-	"io/ioutil"
 	"os"
 	"text/template"
 )
@@ -23,7 +22,7 @@ func getVaultToken() (string, error) {
 			return "", fmt.Errorf("failed to construct vault token path: %s", err)
 		}
 
-		tokenFile, err := ioutil.ReadFile(tokenPath)
+		tokenFile, err := os.ReadFile(tokenPath)
 		if err != nil {
 			return "", fmt.Errorf("failed to read token: %s", err)
 		}
