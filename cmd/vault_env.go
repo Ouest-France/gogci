@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	vault "github.com/hashicorp/vault/api"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
